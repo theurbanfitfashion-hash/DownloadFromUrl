@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: downloadfromurl-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    plan: free
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://theurbanfitfashion-hash.github.io
+      - key: MAX_FILE_MB
+        value: "500"
+      - key: MAX_MEDIA_DURATION_SECONDS
+        value: "1800"
+      - key: JOB_TTL_SECONDS
+        value: "1800"
