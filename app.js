@@ -14,7 +14,6 @@ const MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024;
 // Set this to your deployed backend HTTPS URL after deploying /backend.
 const API_BASE = (window.DOWNLOADFROMURL_API || '').replace(/\/$/, '');
 const PLATFORM_HOSTS = /(^|\.)(youtube\.com|youtu\.be|tiktok\.com|instagram\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|vimeo\.com|dailymotion\.com|twitch\.tv)$/i;
-const PLATFORM_HOSTS = /(^|\\.)(youtube\\.com|youtu\\.be|tiktok\\.com|instagram\\.com|facebook\\.com|fb\\.watch|twitter\\.com|x\\.com|vimeo\\.com|dailymotion\\.com|twitch\\.tv)$/i;
 function isPlatformPage(url) {
   return PLATFORM_HOSTS.test(url.hostname);
 }
