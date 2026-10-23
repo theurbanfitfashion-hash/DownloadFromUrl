@@ -4,43 +4,57 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10111b">
-  <meta name="description" content="Download media from direct, publicly accessible URLs you have permission to use.">
-  <title>DownloadFromUrl — Save media simply</title>
+  <meta name="description" content="A simple online media downloader for direct public file links. Save videos, audio, images and documents you have permission to download.">
+  <title>DownloadFromUrl — Online media downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <header class="topbar">
     <a class="brand" href="#top" aria-label="DownloadFromUrl home"><span class="brand-icon">↓</span><span>Download<span class="brand-accent">FromUrl</span></span></a>
-    <a class="github-link" href="https://github.com" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    <a class="github-link" href="https://github.com/theurbanfitfashion-hash/DownloadFromUrl" target="_blank" rel="noopener noreferrer">View source <span aria-hidden="true">↗</span></a>
   </header>
   <main id="top">
     <section class="hero">
-      <div class="eyebrow"><span class="status-dot"></span> SIMPLE. PRIVATE. IN YOUR BROWSER.</div>
-      <h1>Your media.<br><span>One link away.</span></h1>
-      <p class="hero-copy">Save audio, images, videos, and other files from direct URLs. No account, no upload to our servers — your browser does the work.</p>
+      <div class="eyebrow"><span class="status-dot"></span> FREE ONLINE FILE DOWNLOADER</div>
+      <h1>Save your media.<br><span>Keep it simple.</span></h1>
+      <p class="hero-copy">Paste a direct public file link and save video, audio, images, and documents to your device. No account needed.</p>
       <section class="download-card" aria-labelledby="download-title">
-        <div class="card-heading"><div class="card-symbol">↧</div><div><h2 id="download-title">Paste a media URL</h2><p>Use a direct link to a file you’re allowed to download.</p></div></div>
+        <div class="card-heading"><div class="card-symbol">↧</div><div><h2 id="download-title">Download from a link</h2><p>Start with a direct URL to the media or file.</p></div></div>
         <form id="download-form" novalidate>
-          <label for="media-url" class="sr-only">Media URL</label>
-          <div class="url-input-wrap"><span class="link-icon" aria-hidden="true">↗</span><input id="media-url" name="url" type="url" inputmode="url" placeholder="https://example.com/media/file.mp4" autocomplete="url" required><button id="clear-btn" class="clear-btn" type="button" aria-label="Clear URL" hidden>×</button></div>
-          <div class="options-row"><label for="filename">Save as <span class="optional">(optional)</span></label><input id="filename" name="filename" type="text" maxlength="180" placeholder="original filename"></div>
-          <button class="primary-btn" type="submit"><span>↓</span> Get download <span class="button-arrow">→</span></button>
+          <label for="media-url" class="sr-only">Media or file URL</label>
+          <div class="url-input-wrap"><span class="link-icon" aria-hidden="true">↗</span><input id="media-url" name="url" type="url" inputmode="url" placeholder="Paste your media link here…" autocomplete="url" required><button id="clear-btn" class="clear-btn" type="button" aria-label="Clear URL" hidden>×</button></div>
+          <div class="options-row"><label for="filename">File name <span class="optional">(optional)</span></label><input id="filename" name="filename" type="text" maxlength="180" placeholder="Use original name"></div>
+          <button class="primary-btn" id="submit-btn" type="submit"><span>↓</span> Find download <span class="button-arrow">→</span></button>
         </form>
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
         <div id="result" class="result" hidden>
           <div class="result-file"><div class="file-icon">▣</div><div class="file-info"><strong id="result-name">media-file</strong><span id="result-meta">Direct media link</span></div></div>
           <a id="download-link" class="download-link" href="#" target="_blank" rel="noopener noreferrer" download>Open / download file ↗</a>
-          <p class="result-note">If your browser opens the file instead of saving it, use its download/save option.</p>
+          <p class="result-note">If the source allows browser access, the file will be prepared for download. Otherwise you can try opening the original link.</p>
         </div>
-        <div class="privacy-note"><span aria-hidden="true">◈</span> URL processing happens in your browser. Nothing is uploaded by this page.</div>
+        <div class="privacy-note"><span aria-hidden="true">◈</span> Direct-link mode runs in your browser. This page doesn't upload your files.</div>
       </section>
-      <div class="supported"><span>WORKS WITH DIRECT LINKS</span><div class="format-pills"><span>MP3 · WAV</span><span>JPG · PNG · WEBP</span><span>MP4 · WEBM</span><span>PDF · ZIP · MORE</span></div></div>
+      <div class="supported"><span>COMMON FILE TYPES</span><div class="format-pills"><span>MP4 · WEBM</span><span>MP3 · WAV · M4A</span><span>JPG · PNG · WEBP</span><span>PDF · ZIP · MORE</span></div></div>
     </section>
-    <section class="steps" aria-label="How it works"><article><span class="step-number">01</span><h3>Copy a file link</h3><p>Use a direct, publicly accessible file URL—not just a page that embeds media.</p></article><article><span class="step-number">02</span><h3>Paste it here</h3><p>Add a filename if you want to choose how the saved file is named.</p></article><article><span class="step-number">03</span><h3>Save your file</h3><p>Open the link or download it if the source and browser allow it.</p></article></section>
-    <aside class="limitations"><span class="info-icon">i</span><p><strong>A quick note:</strong> No website can reliably download every URL. Some hosts block cross-origin downloads, require sign-in, or use protected/DRM media. This tool does not bypass access controls or platform restrictions. Only download content you own or have permission to save.</p></aside>
+    <section class="features" aria-label="Downloader features">
+      <article class="feature-card"><span class="feature-icon">⇩</span><h3>Download files</h3><p>Save publicly accessible direct file links to your phone, tablet, or computer.</p></article>
+      <article class="feature-card"><span class="feature-icon">◉</span><h3>Works on mobile</h3><p>Use a modern browser on Android, iOS, Windows, macOS, or Linux.</p></article>
+      <article class="feature-card"><span class="feature-icon">⌁</span><h3>Privacy-minded</h3><p>No account or file upload is needed for browser-supported direct downloads.</p></article>
+    </section>
+    <section class="steps" aria-label="How it works"><article><span class="step-number">01</span><h3>Copy a direct link</h3><p>Copy the file URL itself. A page that embeds a video is not necessarily a direct media link.</p></article><article><span class="step-number">02</span><h3>Paste and check</h3><p>Paste the URL above. Add a filename if you'd like to change the saved name.</p></article><article><span class="step-number">03</span><h3>Save to your device</h3><p>Download the prepared file, or open the original link if the source blocks browser access.</p></article></section>
+    <section class="faq">
+      <h2>Good to know</h2>
+      <details><summary>Can I paste a social media post URL?</summary><p>This version handles direct file URLs. Extracting a video from a social-media or streaming page requires a server-side media processor and depends on the source's rules and access permissions.</p></details>
+      <details><summary>Why didn't the download start?</summary><p>Some hosts block cross-origin browser requests, require a login, or return a webpage instead of a file. Try the direct file URL. This tool does not bypass access controls or DRM.</p></details>
+      <details><summary>Is it free to use?</summary><p>Yes. This page is a simple browser-based utility and does not require an account.</p></details>
+    </section>
+    <aside class="limitations"><span class="info-icon">i</span><p><strong>Use responsibly:</strong> Only download files you own or have permission to save. Respect copyright, website terms, privacy, and technical access restrictions.</p></aside>
   </main>
-  <footer><a class="brand footer-brand" href="#top"><span class="brand-icon">↓</span><span>Download<span class="brand-accent">FromUrl</span></span></a><span>Made for straightforward, permission-based downloads.</span></footer>
+  <footer><a class="brand footer-brand" href="#top"><span class="brand-icon">↓</span><span>Download<span class="brand-accent">FromUrl</span></span></a><span>Simple downloads, with clear limitations.</span></footer>
   <script src="app.js" defer></script>
 </body>
 </html>
