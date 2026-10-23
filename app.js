@@ -11,6 +11,13 @@ const resultMeta = document.querySelector('#result-meta');
 const downloadLink = document.querySelector('#download-link');
 
 const MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024;
+// Set this to your deployed backend HTTPS URL after deploying /backend.
+// GitHub Pages cannot run media extraction or FFmpeg itself.
+const API_BASE = (window.DOWNLOADFROMURL_API || '').replace(/\\/$/, '');
+const PLATFORM_HOSTS = /(^|\\.)(youtube\\.com|youtu\\.be|tiktok\\.com|instagram\\.com|facebook\\.com|fb\\.watch|twitter\\.com|x\\.com|vimeo\\.com|dailymotion\\.com|twitch\\.tv)$/i;
+function isPlatformPage(url) {
+  return PLATFORM_HOSTS.test(url.hostname);
+}
 let activeObjectUrl = null;
 let requestController = null;
 
@@ -118,7 +125,49 @@ form.addEventListener('submit', async (event) => {
   const originalName = safeFilename(suggestedName(parsed.href)) || 'download';
   const finalName = customName || originalName;
 
-  // Always prepare a direct-link fallback in case the source blocks browser fetches.
+  // A social/streaming page URL is not a direct file URL. Never mislabel it as a downloadable file.
+  if (isPlatformPage(parsed.hostname ? parsed : new URL(parsed.href))) {
+    if (!API_BASE) {
+      result.hidden = true;
+      showMessage('This is a social-media or streaming page, not a direct file link. The media backend is not connected yet. Deploy the backend in the repository’s backend/ folder, then set window.DOWNLOADFROMURL_API to its HTTPS URL. This page cannot extract the media by itself.', 'error');
+      return;
+    }
+    const button = form.querySelector('button[type="submit"]');
+    const originalButtonText = button.innerHTML;
+    button.disabled = true;
+    button.textContent = 'Processing media…';
+    showMessage('Contacting the media service. Public URLs only; private or DRM-protected media is not supported.', '');
+    requestController = new AbortController();
+    const apiTimeout = setTimeout(() => requestController?.abort(), 180000);
+    try {
+      const response = await fetch(API_BASE + '/api/download', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url: parsed.href, format: 'mp4', quality: 'best', filename: customName || undefined}),
+        signal: requestController.signal
+      });
+      if (!response.ok) {
+        let detail = 'The media service could not process this URL.';
+        try { const payload = await response.json(); detail = payload.detail || detail; } catch {}
+        throw new Error(detail);
+      }
+      const blob = await response.blob();
+      if (!blob.size) throw new Error('The media service returned an empty file.');
+      activeObjectUrl = URL.createObjectURL(blob);
+      setResult(finalName, 'Media', activeObjectUrl, finalName, true);
+      showMessage('Media is ready to save.', 'success');
+    } catch (error) {
+      showMessage(error.name === 'AbortError' ? 'Media processing timed out. Try a shorter or supported public URL.' : error.message, 'error');
+    } finally {
+      clearTimeout(apiTimeout);
+      requestController = null;
+      button.disabled = false;
+      button.innerHTML = originalButtonText;
+    }
+    return;
+  }
+
+  // Direct-file URL flow; the browser may still be blocked by CORS or source permissions.
   setResult(finalName, getKind(parsed.href), parsed.href, finalName, false);
   showMessage('Checking whether this server allows a direct download…', '');
 
