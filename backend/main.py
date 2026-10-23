@@ -81,7 +81,10 @@ def ydl_base(outtmpl: str, quiet=True):
         "noplaylist": True, "restrictfilenames": True,
         "max_filesize": MAX_FILE_MB * 1024 * 1024,
         "socket_timeout": 20, "retries": 2, "fragment_retries": 2,
-        "extractor_retries": 1, "ignoreerrors": False,
+        "extractor_retries": 2, "ignoreerrors": False,
+        # YouTube increasingly requires a JavaScript runtime to solve player challenges.
+        "js_runtimes": {"deno": {}},
+        "remote_components": ["ejs:github"],
     }
 
 @app.get("/api/health")
@@ -112,7 +115,7 @@ async def info(req: InfoRequest):
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=422, detail="Could not read this media URL. It may be unsupported, private, removed, or blocked by its host.") from exc
+        raise HTTPException(status_code=422, detail=f"Could not read this media URL: {str(exc)[:240]}") from exc
 
 @app.post("/api/download")
 async def download(req: MediaRequest):
@@ -173,4 +176,4 @@ async def download(req: MediaRequest):
         raise
     except Exception as exc:
         shutil.rmtree(job, ignore_errors=True)
-        raise HTTPException(status_code=422, detail="Download or conversion failed. The link may be unsupported, unavailable, protected, or require sign-in. DRM and access controls are not bypassed.") from exc
+        raise HTTPException(status_code=422, detail=f"Download failed: {str(exc)[:240]}. The URL may be unsupported, unavailable, protected, or require sign-in. DRM and access controls are not bypassed.") from exc
