@@ -10,6 +10,10 @@ const resultName = document.querySelector('#result-name');
 const resultMeta = document.querySelector('#result-meta');
 const downloadLink = document.querySelector('#download-link');
 
+const MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024;
+let activeObjectUrl = null;
+let requestController = null;
+
 const knownTypes = {
   audio: /\.(mp3|m4a|aac|wav|ogg|oga|flac|opus|aiff|wma)(?:$|[?#])/i,
   image: /\.(avif|bmp|gif|heic|heif|ico|jpe?g|png|svg|tiff?|webp)(?:$|[?#])/i,
@@ -22,7 +26,18 @@ function showMessage(text, type = '') {
   message.hidden = false;
 }
 
-function getKind(url) {
+function clearObjectUrl() {
+  if (activeObjectUrl) {
+    URL.revokeObjectURL(activeObjectUrl);
+    activeObjectUrl = null;
+  }
+}
+
+function getKind(url, contentType = '') {
+  if (contentType.startsWith('audio/')) return 'Audio';
+  if (contentType.startsWith('image/')) return 'Image';
+  if (contentType.startsWith('video/')) return 'Video';
+  if (contentType.includes('pdf')) return 'PDF';
   for (const [kind, pattern] of Object.entries(knownTypes)) {
     if (pattern.test(url)) return kind[0].toUpperCase() + kind.slice(1);
   }
@@ -39,13 +54,36 @@ function suggestedName(url) {
   }
 }
 
+function safeFilename(value) {
+  return value.trim()
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+    .replace(/[. ]+$/g, '')
+    .slice(0, 180);
+}
+
+function setResult(name, kind, href, downloadName, isBlob) {
+  resultName.textContent = name;
+  resultMeta.textContent = `${kind} · ${isBlob ? 'Ready to save' : 'Direct link'}`;
+  downloadLink.href = href;
+  downloadLink.download = downloadName;
+  downloadLink.target = isBlob ? '_self' : '_blank';
+  downloadLink.textContent = isBlob
+    ? `Download ${downloadName} ↓`
+    : `Open / download ${downloadName} ↗`;
+  result.hidden = false;
+}
+
 urlInput.addEventListener('input', () => {
   clearButton.hidden = !urlInput.value;
   result.hidden = true;
   message.hidden = true;
+  clearObjectUrl();
+  if (requestController) requestController.abort();
 });
 
 clearButton.addEventListener('click', () => {
+  if (requestController) requestController.abort();
+  clearObjectUrl();
   urlInput.value = '';
   filenameInput.value = '';
   clearButton.hidden = true;
@@ -54,39 +92,86 @@ clearButton.addEventListener('click', () => {
   urlInput.focus();
 });
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
   result.hidden = true;
   message.hidden = true;
+  clearObjectUrl();
 
-  const rawUrl = urlInput.value.trim();
+  if (requestController) requestController.abort();
+
   let parsed;
   try {
-    parsed = new URL(rawUrl);
+    parsed = new URL(urlInput.value.trim());
   } catch {
     showMessage('Enter a complete, valid URL beginning with https:// or http://.', 'error');
     urlInput.focus();
     return;
   }
 
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
-    showMessage('For safety, only HTTP and HTTPS links are supported.', 'error');
-    return;
-  }
-  if (!parsed.hostname || parsed.hostname.includes(' ')) {
-    showMessage('That URL does not look valid. Check it and try again.', 'error');
+  if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname || parsed.hostname.includes(' ')) {
+    showMessage('Enter a valid HTTP or HTTPS file URL.', 'error');
     return;
   }
 
-  const originalName = suggestedName(parsed.href);
-  const customName = filenameInput.value.trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_');
+  const customName = safeFilename(filenameInput.value);
+  const originalName = safeFilename(suggestedName(parsed.href)) || 'download';
   const finalName = customName || originalName;
 
-  downloadLink.href = parsed.href;
-  downloadLink.download = finalName;
-  downloadLink.textContent = `Open / download ${finalName} ↗`;
-  resultName.textContent = finalName;
-  resultMeta.textContent = `${getKind(parsed.href)} · Direct link`;
-  result.hidden = false;
-  showMessage('Link looks valid. Use the button below to open or download it; the source server decides whether direct access is allowed.', 'success');
+  // Always prepare a direct-link fallback in case the source blocks browser fetches.
+  setResult(finalName, getKind(parsed.href), parsed.href, finalName, false);
+  showMessage('Checking whether this server allows a direct download…', '');
+
+  requestController = new AbortController();
+  const timeoutId = setTimeout(() => requestController?.abort(), 30000);
+
+  try {
+    const response = await fetch(parsed.href, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      redirect: 'follow',
+      signal: requestController.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`The source server returned HTTP ${response.status}.`);
+    }
+
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    if (contentLength > MAX_DOWNLOAD_BYTES) {
+      throw new Error('This file is larger than the 100 MB browser-download limit.');
+    }
+
+    const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (contentType === 'text/html' || contentType === 'application/xhtml+xml') {
+      throw new Error('That link returned a webpage, not a direct file. Copy the direct media/file URL instead.');
+    }
+
+    const blob = await response.blob();
+    if (!blob.size) {
+      throw new Error('The server returned an empty file.');
+    }
+    if (blob.size > MAX_DOWNLOAD_BYTES) {
+      throw new Error('This file is larger than the 100 MB browser-download limit.');
+    }
+
+    activeObjectUrl = URL.createObjectURL(blob);
+    setResult(finalName, getKind(parsed.href, contentType || blob.type), activeObjectUrl, finalName, true);
+    showMessage('File is ready. Tap Download to save it to your device.', 'success');
+  } catch (error) {
+    // A browser-only site cannot read cross-origin responses unless the host allows CORS.
+    setResult(finalName, getKind(parsed.href), parsed.href, finalName, false);
+
+    if (error.name === 'AbortError') {
+      showMessage('The request timed out or was cancelled. You can still try the direct link below.', 'error');
+    } else if (error instanceof TypeError) {
+      showMessage('The source may block browser access (CORS), require sign-in, or not be a direct file link. Try the direct link below. This page cannot bypass those restrictions.', 'error');
+    } else {
+      showMessage(`${error.message} You can still try opening the direct link below.`, 'error');
+    }
+  } finally {
+    clearTimeout(timeoutId);
+    requestController = null;
+  }
 });
